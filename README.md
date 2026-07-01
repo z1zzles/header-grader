@@ -27,6 +27,7 @@ Security headers are one of the highest-leverage, lowest-effort defenses in web 
 The existing tools all live at the wrong end of the pipeline:
 
 - **[SecurityHeaders.com](https://securityheaders.com)** is excellent, but it scans public production URLs. It can't reach `localhost`, so you only find out after you deploy.
+- **[Lighthouse](https://developer.chrome.com/docs/lighthouse)** proves the model this tool follows — automated, actionable audits against your local dev server — but security headers are a sidebar there. Its best-practices category includes a CSP-effectiveness check and a couple of related audits, and stops short of the full suite: no HSTS `max-age` grading, no Referrer-Policy, Permissions-Policy, or CORP checks, no flagging of `X-Powered-By`/`Server` version leaks — and no generated fix config. Lighthouse is to performance and accessibility what this tool aims to be for security headers.
 - **Browser devtools** show you headers, but don't evaluate them or tell you what's missing.
 - **Helmet's docs** tell you what to configure, but not what your app is *actually sending* after all your middleware runs.
 
@@ -267,7 +268,7 @@ Notable grading behaviors:
 ```
 src/
 ├── types.ts          # Report, CheckResult, Grade, Rule
-├── rules.ts          # one weighted rule per header + recommended values
+├── rules.ts          # one weighted rule per header + recommended values + exploit scenarios
 ├── grade.ts          # weighted score → letter grade
 ├── scan.ts           # fetch URL → headers → report
 ├── report.ts         # ANSI terminal formatting
