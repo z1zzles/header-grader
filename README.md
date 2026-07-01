@@ -2,6 +2,7 @@
 
 > Security header grader for **local dev** — grade your dev server's HTTP security headers and generate the exact Express/Nginx config that fixes them.
 
+[![CI](https://github.com/z1zzles/header-grader/actions/workflows/ci.yml/badge.svg)](https://github.com/z1zzles/header-grader/actions/workflows/ci.yml)
 [![Node ≥ 18](https://img.shields.io/badge/node-%E2%89%A5%2018-brightgreen)](#requirements)
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-blue)](#design-goals)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](#license)
