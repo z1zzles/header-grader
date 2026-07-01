@@ -95,6 +95,16 @@ const csp: Rule = {
   check(ctx) {
     const value = ctx.headers["content-security-policy"];
     if (!value) {
+      // A report-only policy monitors violations but blocks nothing.
+      if (ctx.headers["content-security-policy-report-only"]) {
+        return result(
+          this,
+          "warn",
+          "Only Content-Security-Policy-Report-Only is set. Violations are reported but nothing is blocked; promote the policy to the enforcing header once the reports are clean.",
+          0.25,
+          RECOMMENDED["Content-Security-Policy"]
+        );
+      }
       return result(
         this,
         "fail",

@@ -56,6 +56,17 @@ describe("Content-Security-Policy", () => {
     expect(r.message).toContain("unsafe-eval");
   });
 
+  it("gives partial credit for a report-only policy", () => {
+    const r = resultFor(
+      { "content-security-policy-report-only": "default-src 'self'; script-src 'nonce-abc' 'strict-dynamic'" },
+      "Content-Security-Policy"
+    );
+    expect(r.status).toBe("warn");
+    expect(r.message).toContain("Report-Only");
+    expect(r.earned).toBeGreaterThan(0);
+    expect(r.earned).toBeLessThan(r.weight);
+  });
+
   it("does not flag unsafe-inline that only appears in style-src", () => {
     const r = resultFor(
       { "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'" },

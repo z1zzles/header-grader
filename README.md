@@ -290,12 +290,22 @@ npm run typecheck   # tsc --noEmit
 npm run build       # tsup → dist/ (ESM + CJS + .d.ts)
 ```
 
-Try it against a deliberately bad server:
+No server handy? The repo ships two sample servers (also used as CI fixtures):
 
 ```sh
-node -e 'require("http").createServer((q,s)=>{s.setHeader("Content-Type","text/html");s.end("hi")}).listen(3456)' &
-node dist/cli.js localhost:3456 --fix express
+npm run demo:bare        # unhardened server on :3456, grades F
+npm run demo:hardened    # fully hardened server on :3457, grades A+
 ```
+
+Then, in another terminal:
+
+```sh
+node dist/cli.js localhost:3456 --explain        # see the F and why it matters
+node dist/cli.js localhost:3456 --fix express    # see the generated fix
+node dist/cli.js localhost:3457                  # see what A+ looks like
+```
+
+A note on grading real-world sites: header-grader evaluates exactly what the response sends, so even big-name production sites can score poorly. Some of that is deliberate tradeoff (for example, a domain baked into the browser HSTS preload list gains little from the HSTS header, and a Content-Security-Policy-Report-Only header monitors without enforcing, which earns partial credit here). The rubric is tuned for what YOUR app should send, not for excusing what large platforms can get away with.
 
 ## Roadmap
 
