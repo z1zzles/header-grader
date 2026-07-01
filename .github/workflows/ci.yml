@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+    name: Node ${{ matrix.node }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      # Dogfood: gate this repo's CI on the tool's own --min-grade flag.
+      - name: Dogfood — hardened fixture must earn A+
+        run: |
+          node test/fixtures/hardened-server.mjs &
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:3457 >/dev/null && break
+            sleep 0.5
+          done
+          node dist/cli.js http://127.0.0.1:3457 --min-grade A+
+
+      - name: Dogfood — bare fixture must fail the B gate (exit 1)
+        run: |
+          node test/fixtures/bare-server.mjs &
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:3456 >/dev/null && break
+            sleep 0.5
+          done
+          set +e
+          node dist/cli.js http://127.0.0.1:3456 --min-grade B
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "Expected exit code 1 (grade below minimum), got $code"
+            exit 1
+          fi
