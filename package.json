@@ -1,6 +1,6 @@
 {
   "name": "header-grader",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Security header grader for local dev — grades your dev server's HTTP security headers and generates the Express/Nginx config to fix them.",
   "keywords": [
     "security",
