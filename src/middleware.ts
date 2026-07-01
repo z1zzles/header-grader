@@ -9,6 +9,8 @@ export interface MiddlewareOptions {
    * changes. Default: grade only the first HTML/document response.
    */
   watch?: boolean;
+  /** Include the attack scenario for each failing header in the printed report. */
+  explain?: boolean;
   /** Called with the report instead of printing to the console. */
   onReport?: (report: Report) => void;
   /** Treat the server as local HTTP (relaxes HSTS). Default: true — it's a dev tool. */
@@ -24,7 +26,7 @@ export interface MiddlewareOptions {
  *   if (app.get("env") === "development") app.use(headerGrader());
  */
 export function headerGrader(options: MiddlewareOptions = {}) {
-  const { watch = false, onReport, isLocalHttp = true } = options;
+  const { watch = false, explain = false, onReport, isLocalHttp = true } = options;
   let done = false;
   let lastGrade: string | undefined;
 
@@ -61,7 +63,7 @@ export function headerGrader(options: MiddlewareOptions = {}) {
       if (onReport) {
         onReport(report);
       } else {
-        console.log(formatReport(report));
+        console.log(formatReport(report, { explain }));
       }
     });
 

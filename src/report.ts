@@ -21,7 +21,29 @@ function gradeColor(grade: Grade): (s: string) => string {
   return red;
 }
 
-export function formatReport(report: Report): string {
+/** Word-wrap `text` to `width`, prefixing each line with `indent`. */
+function wrapText(text: string, indent: string, width = 76): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    if (current && indent.length + current.length + 1 + word.length > width) {
+      lines.push(indent + current);
+      current = word;
+    } else {
+      current = current ? `${current} ${word}` : word;
+    }
+  }
+  if (current) lines.push(indent + current);
+  return lines;
+}
+
+export interface FormatOptions {
+  /** Include the concrete attack scenario under each failing header. */
+  explain?: boolean;
+}
+
+export function formatReport(report: Report, options: FormatOptions = {}): string {
   const lines: string[] = [];
   const color = gradeColor(report.grade);
 
@@ -36,6 +58,10 @@ export function formatReport(report: Report): string {
   for (const r of scored) {
     lines.push(`  ${STATUS_ICON[r.status]} ${bold(r.header)}`);
     lines.push(`    ${dim(r.message)}`);
+    if (options.explain && r.exploit) {
+      lines.push(`    ${yellow("If exploited:")}`);
+      lines.push(...wrapText(r.exploit, "      ").map(dim));
+    }
   }
 
   const hygieneIssues = hygiene.filter((r) => r.status !== "pass");
@@ -45,12 +71,19 @@ export function formatReport(report: Report): string {
     for (const r of hygieneIssues) {
       lines.push(`  ${STATUS_ICON[r.status]} ${bold(r.header)}`);
       lines.push(`    ${dim(r.message)}`);
+      if (options.explain && r.exploit) {
+        lines.push(`    ${yellow("If exploited:")}`);
+        lines.push(...wrapText(r.exploit, "      ").map(dim));
+      }
     }
   }
 
   const fixable = report.results.some((r) => r.status !== "pass");
   if (fixable) {
     lines.push("");
+    if (!options.explain) {
+      lines.push(`  ${dim("Why it matters:")} header-grader ${report.url} --explain`);
+    }
     lines.push(`  ${dim("Generate the fix:")} header-grader ${report.url} --fix express ${dim("(or --fix nginx)")}`);
   }
   lines.push("");

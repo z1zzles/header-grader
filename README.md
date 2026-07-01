@@ -126,10 +126,29 @@ server_tokens off;
 
 Apply the snippet, re-run the command, and watch the grade climb.
 
+**Understand the stakes** — `--explain` adds a concrete attack scenario under every failing header:
+
+```sh
+header-grader localhost:3000 --explain
+```
+
+```
+  ✗ X-Frame-Options
+    Missing (and no CSP frame-ancestors). Your site can be framed for clickjacking.
+    If exploited:
+      Clickjacking: an attacker's page loads your site in an invisible
+      full-screen iframe and positions a fake 'Play video' button exactly
+      over your real 'Delete account' or 'Transfer funds' button. The victim
+      clicks their page but presses yours — with their logged-in session.
+```
+
+This is the teaching half of the tool: not just *what's* missing, but what an attacker does with the gap — session theft via injected scripts (CSP), sslstrip downgrades on public Wi-Fi (HSTS), stored XSS through file uploads (nosniff), reset-token leaks through the Referer header (Referrer-Policy), and so on.
+
 **All CLI options:**
 
 | Option | Description |
 | --- | --- |
+| `--explain` | Show how each missing header could be exploited |
 | `--fix <express\|nginx>` | Print a config snippet that fixes the failing headers |
 | `--json` | Output the full report as JSON |
 | `--min-grade <grade>` | Exit with code 1 if the grade is below this — for CI |
@@ -160,6 +179,7 @@ Works with any Connect-compatible framework (Express, plain `node:http` handlers
 | Option | Default | Description |
 | --- | --- | --- |
 | `watch` | `false` | Keep grading; reprint whenever the grade changes |
+| `explain` | `false` | Include the attack scenario for each failing header |
 | `onReport` | — | `(report) => void` — receive the report object instead of console output |
 | `isLocalHttp` | `true` | Relax HSTS scoring (browsers ignore HSTS over plain HTTP) |
 
@@ -193,7 +213,9 @@ import {
 const report = await scan("http://localhost:3000");
 report.grade;   // "F"
 report.score;   // 13
-report.results; // per-header CheckResult[] with status, message, recommended value
+report.results; // per-header CheckResult[]: status, message, recommended value,
+                // and — for anything not passing — an `exploit` field with the
+                // concrete attack scenario (also present in --json output)
 
 console.log(generateNginx(report));
 

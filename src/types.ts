@@ -15,6 +15,8 @@ export interface CheckResult {
   weight: number;
   /** The value we recommend setting, when status != pass. */
   recommended?: string;
+  /** Concrete attack scenario this header prevents, when status != pass. */
+  exploit?: string;
 }
 
 export interface ScanContext {

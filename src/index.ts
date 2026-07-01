@@ -1,7 +1,8 @@
 export { scan, gradeHeaders, isLocalHttpUrl } from "./scan.js";
-export { runRules, rules, RECOMMENDED } from "./rules.js";
+export { runRules, rules, RECOMMENDED, EXPLOITS } from "./rules.js";
 export { scoreOf, gradeOf, meetsGrade, isGrade } from "./grade.js";
 export { formatReport } from "./report.js";
+export type { FormatOptions } from "./report.js";
 export { generateExpress } from "./generators/express.js";
 export { generateNginx } from "./generators/nginx.js";
 export { headerGrader } from "./middleware.js";

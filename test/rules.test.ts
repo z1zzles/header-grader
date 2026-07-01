@@ -118,6 +118,24 @@ describe("hygiene penalties", () => {
   });
 });
 
+describe("exploit explanations", () => {
+  it("attaches an attack scenario to every non-passing check", () => {
+    const report = gradeHeaders({ "x-powered-by": "Express", server: "nginx/1.25.3" });
+    const failing = report.results.filter((r) => r.status !== "pass");
+    expect(failing.length).toBeGreaterThan(0);
+    for (const r of failing) {
+      expect(r.exploit, `${r.header} should explain its exploit`).toBeTruthy();
+    }
+  });
+
+  it("omits the scenario on passing checks", () => {
+    const report = gradeHeaders(STRONG_HEADERS);
+    for (const r of report.results.filter((x) => x.status === "pass")) {
+      expect(r.exploit).toBeUndefined();
+    }
+  });
+});
+
 describe("header normalization", () => {
   it("accepts mixed-case header names", () => {
     const report = gradeHeaders({ "X-Content-Type-Options": "nosniff" } as Headers);

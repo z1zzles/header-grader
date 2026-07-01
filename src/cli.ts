@@ -11,6 +11,7 @@ Usage:
   header-grader <url> [options]
 
 Options:
+  --explain               Show how each missing header could be exploited
   --fix <express|nginx>   Print a config snippet that fixes the failing headers
   --json                  Output the full report as JSON
   --min-grade <grade>     Exit 1 if the grade is below this (A+, A, B, C, D) — for CI
@@ -18,6 +19,7 @@ Options:
 
 Examples:
   header-grader localhost:3000
+  header-grader localhost:3000 --explain
   header-grader http://localhost:8080 --fix nginx
   header-grader localhost:3000 --min-grade B --json
 `;
@@ -26,11 +28,12 @@ interface Args {
   url: string;
   fix?: "express" | "nginx";
   json: boolean;
+  explain: boolean;
   minGrade?: string;
 }
 
 function parseArgs(argv: string[]): Args | null {
-  const args: Args = { url: "", json: false };
+  const args: Args = { url: "", json: false, explain: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
     switch (arg) {
@@ -39,6 +42,9 @@ function parseArgs(argv: string[]): Args | null {
         return null;
       case "--json":
         args.json = true;
+        break;
+      case "--explain":
+        args.explain = true;
         break;
       case "--fix": {
         const target = argv[++i];
@@ -96,7 +102,7 @@ async function main(): Promise<void> {
   if (args.json) {
     console.log(JSON.stringify(report, null, 2));
   } else {
-    console.log(formatReport(report));
+    console.log(formatReport(report, { explain: args.explain }));
   }
 
   if (args.fix) {
